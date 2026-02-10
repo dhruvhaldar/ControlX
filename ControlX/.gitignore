@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+images/
+!images/sigma_plot.png
+!images/sensitivity_plot.png
+!images/lqg_step_response.png
+!images/mpc_simulation.png
