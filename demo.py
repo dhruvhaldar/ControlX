@@ -62,11 +62,8 @@ def run_demo():
 
     # Singular Values Plot
     omega = np.logspace(-2, 2, 100)
-    sv_list = []
-    for w in omega:
-        sv = analysis.calculate_singular_values(sys, w)
-        sv_list.append(sv)
-    sv_arr = np.array(sv_list)
+    # ⚡ Bolt Optimization: Use vectorized single call instead of slow Python loop
+    sv_arr = analysis.calculate_singular_values(sys, omega)
 
     plt.figure()
     plt.loglog(omega, sv_arr)
