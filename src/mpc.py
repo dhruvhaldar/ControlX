@@ -1,6 +1,7 @@
 import numpy as np
 import cvxpy as cp
 import control as ct
+import scipy.sparse as sp
 
 class MPCController:
     """
@@ -71,24 +72,40 @@ class MPCController:
         cost = 0
         constraints = [self._x[:, 0] == self._x0_param]
 
-        for k in range(self.N):
-            cost += cp.quad_form(self._x[:, k], self.Q) + cp.quad_form(self._u[:, k], self.R)
-            constraints += [self._x[:, k+1] == self.A @ self._x[:, k] + self.B @ self._u[:, k]]
+        # ⚡ Bolt Optimization: Fully vectorize MPC problem formulation
+        # Replaces O(N) loop with vectorized operations for state, input, and cost computations.
+        # This significantly speeds up problem setup and solving via CVXPY.
 
-            # Input constraints
-            if 'umin' in self.constraints:
-                constraints += [self._u[:, k] >= self.constraints['umin']]
-            if 'umax' in self.constraints:
-                constraints += [self._u[:, k] <= self.constraints['umax']]
+        # Block diagonal matrices for vectorized cost computation
+        Q_big = sp.block_diag([self.Q] * self.N)
+        R_big = sp.block_diag([self.R] * self.N)
 
-            # State constraints
-            if 'xmin' in self.constraints:
-                constraints += [self._x[:, k+1] >= self.constraints['xmin']]
-            if 'xmax' in self.constraints:
-                constraints += [self._x[:, k+1] <= self.constraints['xmax']]
+        import warnings
+        # Vectorized cost
+        # Suppress FutureWarnings about `order` since we explicitly rely on default Fortran ordering for compatibility
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=FutureWarning)
+            cost = cp.quad_form(cp.vec(self._x[:, :-1]), Q_big) + cp.quad_form(cp.vec(self._u), R_big)
+        cost += cp.quad_form(self._x[:, self.N], self.P) # Terminal cost
 
-        # Terminal cost
-        cost += cp.quad_form(self._x[:, self.N], self.P)
+        # Vectorized state dynamics constraint
+        constraints += [self._x[:, 1:] == self.A @ self._x[:, :-1] + self.B @ self._u]
+
+        # Vectorized input constraints
+        if 'umin' in self.constraints:
+            umin = np.atleast_1d(self.constraints['umin']).reshape(-1, 1) if isinstance(self.constraints['umin'], (np.ndarray, list)) else self.constraints['umin']
+            constraints += [self._u >= umin]
+        if 'umax' in self.constraints:
+            umax = np.atleast_1d(self.constraints['umax']).reshape(-1, 1) if isinstance(self.constraints['umax'], (np.ndarray, list)) else self.constraints['umax']
+            constraints += [self._u <= umax]
+
+        # Vectorized state constraints
+        if 'xmin' in self.constraints:
+            xmin = np.atleast_1d(self.constraints['xmin']).reshape(-1, 1) if isinstance(self.constraints['xmin'], (np.ndarray, list)) else self.constraints['xmin']
+            constraints += [self._x[:, 1:] >= xmin]
+        if 'xmax' in self.constraints:
+            xmax = np.atleast_1d(self.constraints['xmax']).reshape(-1, 1) if isinstance(self.constraints['xmax'], (np.ndarray, list)) else self.constraints['xmax']
+            constraints += [self._x[:, 1:] <= xmax]
 
         self._prob = cp.Problem(cp.Minimize(cost), constraints)
 

@@ -1,3 +1,7 @@
 ## 2024-05-19 - Vectorize `calculate_singular_values` for Multiple Frequencies
 **Learning:** `control.StateSpace.evalfr` is extremely slow when used in a `for` loop over many frequencies for computing singular values (such as creating Sigma plots). In Python, `control` can compute frequency responses natively for an array of frequencies using `sys.frequency_response(omega).complex`, which returns a `(outputs, inputs, frequencies)` array (for MIMO systems). This can be fed directly to a vectorized `numpy.linalg.svd` by transposing to `(frequencies, outputs, inputs)` for significant speedup over looping.
 **Action:** When computing any metric over a frequency array, prefer `sys.frequency_response(omega)` and vectorized `numpy` operations instead of python loops with `evalfr`.
+
+## 2024-05-19 - Vectorize CVXPY MPC Problem Formulation
+**Learning:** `cvxpy.quad_form` and linear constraint setup inside a standard `for` loop over a long prediction horizon N scales poorly in python. The problem setup and the underlying solver operations become remarkably slow for MPC problems.
+**Action:** Always fully vectorize MPC problems using `scipy.sparse.block_diag` and `cp.vec(..., order='F')` when using `cvxpy`. Combine state updates and cost terms into single vectorized operations along the horizon instead of adding terms in a `for` loop.

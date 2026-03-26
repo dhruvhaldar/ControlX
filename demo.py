@@ -175,14 +175,10 @@ def run_demo():
     S = robustness.sensitivity_function(sys, K_lqg)
 
     # Plot Sensitivity Singular Value
-    s_sv_list = []
-    for w in omega:
-        resp = ct.evalfr(S, w*1j)
-        if np.isscalar(resp):
-            sv = np.abs(resp)
-        else:
-            sv = np.max(np.linalg.svd(resp, compute_uv=False))
-        s_sv_list.append(sv)
+    # ⚡ Bolt Optimization: Use vectorized single call instead of slow Python loop
+    # This provides a significant speedup when calculating SVs over a frequency range
+    sv_arr = analysis.calculate_singular_values(S, omega)
+    s_sv_list = np.max(sv_arr, axis=1) if sv_arr.ndim > 1 else sv_arr
 
     plt.figure()
     plt.loglog(omega, s_sv_list)
