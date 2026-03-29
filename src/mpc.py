@@ -1,6 +1,7 @@
 import numpy as np
 import cvxpy as cp
 import control as ct
+import scipy.linalg
 import logging
 
 logger = logging.getLogger(__name__)
@@ -91,14 +92,16 @@ class MPCController:
         if 'xmax' in self.constraints:
             constraints += [self._x[:, 1:] <= self.constraints['xmax']]
 
-        cost = 0
-        # Cost function still uses a loop as cp.quad_form doesn't vectorize easily across an axis,
-        # but constraints vectorization yields the majority of the performance gain.
-        for k in range(self.N):
-            cost += cp.quad_form(self._x[:, k], self.Q) + cp.quad_form(self._u[:, k], self.R)
+        # ⚡ Bolt Optimization: Vectorize CVXPY cost function over the prediction horizon
+        # Replacing the Python loop and cp.quad_form with cp.sum_squares of matrix square roots
+        # reduces problem compilation time significantly and improves solve time.
+        Q_sqrt = scipy.linalg.sqrtm(self.Q).real
+        R_sqrt = scipy.linalg.sqrtm(self.R).real
+        P_sqrt = scipy.linalg.sqrtm(self.P).real
 
-        # Terminal cost
-        cost += cp.quad_form(self._x[:, self.N], self.P)
+        cost = (cp.sum_squares(Q_sqrt @ self._x[:, :-1]) +
+                cp.sum_squares(R_sqrt @ self._u) +
+                cp.sum_squares(P_sqrt @ self._x[:, self.N]))
 
         self._prob = cp.Problem(cp.Minimize(cost), constraints)
 
