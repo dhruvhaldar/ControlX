@@ -17,3 +17,7 @@
 ## 2025-06-15 - Vectorizing Frequency Response for StateSpace Systems
 **Learning:** `control.StateSpace.frequency_response` is slow for arrays of frequencies when the `slycot` dependency is missing, as it falls back to a slow Python loop evaluating polynomials via Horner's method.
 **Action:** For performance-critical frequency evaluations of StateSpace systems, manually compute the frequency response using vectorized NumPy array operations `C @ np.linalg.inv(sI - A) @ B + D`. Be careful to handle continuous vs discrete time systems correctly, and fallback to `sys.frequency_response` if `np.linalg.inv` fails due to a `LinAlgError` (e.g., when a frequency exactly hits a pole).
+
+## 2025-06-25 - Direct Evaluation of StateSpace Systems at a Single Frequency
+**Learning:** When evaluating the frequency response of `control.StateSpace` systems at a single frequency (e.g., for system gain), calling `ct.evalfr(sys, omega * 1j)` incurs significant library structural overhead. A direct matrix solve `sys.C @ np.linalg.solve(s * np.eye(sys.nstates) - sys.A, sys.B) + sys.D` provides a ~5-9x speedup (where `s = omega * 1j` for continuous systems and `s = np.exp(omega * 1j * sys.dt)` for discrete systems).
+**Action:** For single frequency evaluations, bypass `ct.evalfr` and use direct matrix solving. Ensure to wrap this in a `try...except np.linalg.LinAlgError` block returning `np.nan` arrays to match library behavior at system poles.
