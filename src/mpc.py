@@ -6,6 +6,22 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def _validate_matrix(matrix, name="Matrix"):
+    """
+    Validate that a matrix is finite, square, and symmetric positive semi-definite.
+    """
+    matrix = np.atleast_2d(matrix)
+    if not np.isfinite(matrix).all():
+        raise ValueError(f"{name} must contain only finite numbers.")
+    if matrix.shape[0] != matrix.shape[1]:
+        raise ValueError(f"{name} must be a square matrix.")
+    if not np.allclose(matrix, matrix.T):
+        raise ValueError(f"{name} must be symmetric.")
+    if np.min(np.linalg.eigvalsh(matrix)) < -1e-8:
+        raise ValueError(f"{name} must be positive semi-definite.")
+    return matrix
+
+
 class MPCController:
     """
     Model Predictive Controller.
@@ -34,8 +50,10 @@ class MPCController:
 
         self.dt = dt
         self.N = N
-        self.Q = Q
-        self.R = R
+
+        # Security: Validate matrices to prevent silent data corruption later
+        self.Q = _validate_matrix(Q, "Q")
+        self.R = _validate_matrix(R, "R")
         self.constraints = constraints if constraints else {}
 
         # Discretize system if continuous

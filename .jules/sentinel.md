@@ -18,3 +18,7 @@
 **Vulnerability:** Artificial cap on array sizes (N <= 1000) deep inside the core MPC controller mathematical utility.
 **Learning:** Do not artificially cap array sizes deep inside core mathematical utilities or numerical functions to prevent DoS. This breaks legitimate scientific use cases and is considered 'security theater'. Input validation for resource exhaustion must happen at the application API or user-input boundary.
 **Prevention:** Ensure that any resource exhaustion checks are performed at the appropriate boundary layer, rather than embedded within core library code.
+## 2026-04-06 - Prevent silent data corruption in weight matrices
+**Vulnerability:** Missing validation for weight matrices in MPC and synthesis functions.
+**Learning:** Invalid weight matrices lead to silent data corruption when calculating square roots.
+**Prevention:** Validate weight and covariance matrices to ensure they are finite, square, and positive semi-definite before processing.
