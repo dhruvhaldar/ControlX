@@ -2,6 +2,22 @@ import numpy as np
 import control as ct
 import scipy.linalg
 
+def _validate_matrix(matrix, name="Matrix"):
+    """
+    Validate that a matrix is finite, square, and symmetric positive semi-definite.
+    """
+    matrix = np.atleast_2d(matrix)
+    if not np.isfinite(matrix).all():
+        raise ValueError(f"{name} must contain only finite numbers.")
+    if matrix.shape[0] != matrix.shape[1]:
+        raise ValueError(f"{name} must be a square matrix.")
+    if not np.allclose(matrix, matrix.T):
+        raise ValueError(f"{name} must be symmetric.")
+    if np.min(np.linalg.eigvalsh(matrix)) < -1e-8:
+        raise ValueError(f"{name} must be positive semi-definite.")
+    return matrix
+
+
 def design_lqr(sys, Q, R):
     """
     Design an LQR controller for the system.
@@ -23,9 +39,9 @@ def design_lqr(sys, Q, R):
     if not isinstance(sys, ct.StateSpace):
         raise TypeError("System must be a control.StateSpace object. State matrices (Q, Qn) cannot be applied to arbitrary transfer function realizations.")
 
-    # Convert scalar weights to 2D arrays to maintain API compatibility
-    Q = np.atleast_2d(Q)
-    R = np.atleast_2d(R)
+    # Security: Validate matrices to prevent silent data corruption later
+    Q = _validate_matrix(Q, "Q")
+    R = _validate_matrix(R, "R")
 
     # ⚡ Bolt Optimization: Use scipy.linalg.solve_continuous_are/solve_discrete_are instead of control.lqr/dlqr
     # This bypasses the control library's validation and object creation overhead, providing a ~15x speedup.
@@ -64,10 +80,9 @@ def design_kalman_filter(sys, Qn, Rn, G=None):
     if G is None:
         G = sys.B
 
-    # lqe takes (A, G, C, Qn, Rn)
-    # Convert scalar weights to 2D arrays to maintain API compatibility
-    Qn = np.atleast_2d(Qn)
-    Rn = np.atleast_2d(Rn)
+    # Security: Validate matrices to prevent silent data corruption later
+    Qn = _validate_matrix(Qn, "Qn")
+    Rn = _validate_matrix(Rn, "Rn")
 
     # lqe takes (A, G, C, Qn, Rn)
     # The original control.lqe explicitly solves the continuous-time problem

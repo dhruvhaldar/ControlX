@@ -43,3 +43,23 @@ def test_mpc_fail_securely_on_solver_error():
 
     assert status == "solver_error"
     assert np.allclose(u0, 0)
+
+def test_mpc_invalid_matrix():
+    sys = ct.ss([[-1]], [[1]], [[1]], [[0]])
+    Q = np.array([[1, 2], [3, 4]]) # Not symmetric, not correct shape
+    R = np.array([[-1]]) # Not positive semi-definite
+    N = 10
+    dt = 0.1
+    constraints = {'umin': -1, 'umax': 1}
+
+    with pytest.raises(ValueError, match="Q must be a square matrix|Q must be symmetric|R must be positive semi-definite"):
+        controller = mpc.MPCController(sys, Q, R, N, dt, constraints)
+
+    Q_valid = np.array([[1]])
+    with pytest.raises(ValueError, match="R must be positive semi-definite"):
+        controller = mpc.MPCController(sys, Q_valid, R, N, dt, constraints)
+
+    Q_inf = np.array([[np.inf]])
+    R_valid = np.array([[1]])
+    with pytest.raises(ValueError, match="Q must contain only finite numbers"):
+        controller = mpc.MPCController(sys, Q_inf, R_valid, N, dt, constraints)
