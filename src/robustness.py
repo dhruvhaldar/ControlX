@@ -89,9 +89,10 @@ def calculate_hinf_norm(sys, omega=None):
         sI_minus_A = s[:, np.newaxis, np.newaxis] * I - sys.A
 
         try:
-            inv_sI_minus_A = np.linalg.inv(sI_minus_A)
+            B_b = np.broadcast_to(sys.B, (len(omega_arr), sys.nstates, sys.ninputs))
+            X = np.linalg.solve(sI_minus_A, B_b)
             # resp_T shape: (freqs, outputs, inputs)
-            resp_T = sys.C @ inv_sI_minus_A @ sys.B + sys.D
+            resp_T = sys.C @ X + sys.D
 
             if sys.ninputs == 1 and sys.noutputs == 1:
                 max_sv = np.max(np.abs(resp_T))
