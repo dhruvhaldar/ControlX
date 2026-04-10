@@ -58,13 +58,14 @@ def calculate_singular_values(sys, omega=0):
             eigvals, V = np.linalg.eig(sys.A)
 
             # Check condition number to ensure stable diagonalization
-            if np.linalg.cond(V) < 1e10:
+            # ⚡ Bolt Optimization: Use 1-norm for condition number, which avoids a slow SVD.
+            if np.linalg.cond(V, 1) < 1e10:
                 CV = sys.C @ V
                 invVB = np.linalg.solve(V, sys.B)
                 s_minus_eig = s[:, np.newaxis] - eigvals
                 inv_s_minus_eig = 1.0 / s_minus_eig
-                CV_scaled = CV[np.newaxis, :, :] * inv_s_minus_eig[:, np.newaxis, :]
-                resp_T = CV_scaled @ invVB + sys.D
+                # ⚡ Bolt Optimization: Use einsum instead of broadcasting intermediate arrays.
+                resp_T = np.einsum('ok,fk,ki->foi', CV, inv_s_minus_eig, invVB) + sys.D
             else:
                 # Fallback for non-diagonalizable matrices
                 I = np.eye(sys.nstates)
