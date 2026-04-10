@@ -29,3 +29,7 @@
 ## 2025-10-24 - Fast Positive Semi-Definite Matrix Validation
 **Learning:** Using `np.linalg.eigvalsh` to check if a matrix is positive semi-definite is an $O(4N^3/3)$ operation. In high-performance control loops or initialization (like MPC or LQG), this creates a significant validation overhead.
 **Action:** Replace `eigvalsh` checks with a Cholesky decomposition (`np.linalg.cholesky(matrix + np.eye(N) * 1e-9)`). Cholesky decomposition is $O(N^3/3)$, providing a ~2-3x speedup for validating matrix positive semi-definiteness.
+
+## 2026-11-20 - Fast Condition Number Validation
+**Learning:** The default `np.linalg.cond(V)` computes the 2-norm condition number which requires a full Singular Value Decomposition (SVD), an $O(N^3)$ operation. In high-performance loops evaluating frequency responses, this condition check can become a bottleneck. Furthermore, `np.einsum` can replace broadcasting of intermediate arrays for final matrix summations to save time and memory.
+**Action:** When validating matrix condition numbers for numerical stability (e.g., before diagonalization), always use `np.linalg.cond(V, 1)`, which computes the 1-norm much faster. Additionally, use `np.einsum('ok,fk,ki->foi', CV, inv_s_minus_eig, invVB)` instead of scaled intermediate array broadcasting.
