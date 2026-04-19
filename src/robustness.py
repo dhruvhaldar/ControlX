@@ -28,7 +28,9 @@ def sensitivity_function(G, K):
             C_s = -L.C
             D_s = np.eye(L.noutputs)
         else:
-            I_plus_D = np.eye(L.noutputs) + L.D
+            # ⚡ Bolt Optimization: Avoid dense identity matrices by modifying the flat diagonal of a copy
+            I_plus_D = L.D.copy()
+            I_plus_D.flat[::L.noutputs+1] += 1
             inv_I_plus_D = np.linalg.inv(I_plus_D)
 
             A_s = L.A - L.B @ inv_I_plus_D @ L.C
@@ -89,7 +91,9 @@ def complementary_sensitivity_function(G, K):
             C_T = L.C
             D_T = np.zeros_like(L.D)
         else:
-            I_plus_D = np.eye(L.noutputs) + L.D
+            # ⚡ Bolt Optimization: Avoid dense identity matrices by modifying the flat diagonal of a copy
+            I_plus_D = L.D.copy()
+            I_plus_D.flat[::L.noutputs+1] += 1
             inv_I_plus_D = np.linalg.inv(I_plus_D)
 
             A_T = L.A - L.B @ inv_I_plus_D @ L.C
@@ -150,8 +154,10 @@ def calculate_hinf_norm(sys, omega=None):
                 # Einsum is significantly slower (~8.5x for 50 states) than vectorized broadcasting + matmul.
                 resp_T = (CV * inv_s_minus_eig[:, np.newaxis, :]) @ invVB + sys.D
             else:
-                I = np.eye(sys.nstates)
-                sI_minus_A = s[:, np.newaxis, np.newaxis] * I - sys.A
+                # ⚡ Bolt Optimization: Avoid dense np.eye array allocation and multiplication
+                sI_minus_A = np.empty((len(omega_arr), sys.nstates, sys.nstates), dtype=complex)
+                sI_minus_A[:] = -sys.A
+                sI_minus_A[:, np.arange(sys.nstates), np.arange(sys.nstates)] += s[:, np.newaxis]
                 B_b = np.broadcast_to(sys.B, (len(omega_arr), sys.nstates, sys.ninputs))
                 X = np.linalg.solve(sI_minus_A, B_b)
                 resp_T = sys.C @ X + sys.D
