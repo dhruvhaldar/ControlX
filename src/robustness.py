@@ -126,7 +126,13 @@ def calculate_hinf_norm(sys, omega=None):
     # Avoids sys.frequency_response overhead for StateSpace objects (which relies
     # on slow Horner evaluation fallback without slycot) by directly computing
     # C @ inv(sI - A) @ B + D over the frequency array.
-    omega_arr = np.atleast_1d(omega)
+    try:
+        omega_arr = np.array(np.atleast_1d(omega), dtype=float)
+    except (ValueError, TypeError):
+        raise ValueError("omega must be a numeric array or scalar.")
+
+    if not np.isfinite(omega_arr).all():
+        raise ValueError("omega must contain only finite numbers.")
 
     if isinstance(sys, ct.StateSpace):
         if sys.dt is None or sys.dt == 0:

@@ -48,3 +48,7 @@
 **Vulnerability:** The `calculate_singular_values` and `system_gain` functions lacked explicit type and structural validation for frequency input `omega`, leading to unhandled `TypeError` or `UFuncNoLoopError` exceptions deep within the numpy calculations when computing with the complex plane variable `s` if strings or missing parameters were provided.
 **Learning:** Mathematical utility functions that perform operations directly on user inputs must validate the structure and content type. Unhandled exceptions in the underlying numerical frameworks can crash the application instead of securely returning controlled errors.
 **Prevention:** Always wrap data type coercions and structural checks in explicit `try...except` blocks at the function boundary, ensuring secure failure via predictable exceptions like `ValueError`.
+## 2024-04-19 - Prevent Unhandled Exceptions via Input Validation in H-inf Norm
+**Vulnerability:** The `calculate_hinf_norm` function lacked explicit type and finiteness validation for its `omega` array parameter.
+**Learning:** Functions accepting arrays and performing direct mathematical checks without confirming they are numeric arrays can cause framework-level `UFuncNoLoopError` crashes for invalid inputs like strings or `np.nan`.
+**Prevention:** Catch parsing exceptions (`ValueError`, `TypeError`) when validating parameters by explicitly coercing inputs to expected types (e.g., `float()`), and re-throw them as controlled `ValueError`s to fail securely.
