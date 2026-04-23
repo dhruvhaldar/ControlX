@@ -211,12 +211,24 @@ def small_gain_theorem_check(M, Delta, omega=None):
     if isinstance(M, (ct.StateSpace, ct.TransferFunction)):
         norm_M = calculate_hinf_norm(M, omega)
     else:
-        norm_M = np.linalg.norm(M, 2) # Assume matrix gain
+        try:
+            M_arr = np.array(np.atleast_2d(M), dtype=float)
+        except (ValueError, TypeError):
+            raise ValueError("M must be a control system or a numeric matrix/scalar.")
+        if not np.isfinite(M_arr).all():
+            raise ValueError("M must contain only finite numbers.")
+        norm_M = np.linalg.norm(M_arr, 2) # Assume matrix gain
 
     if isinstance(Delta, (ct.StateSpace, ct.TransferFunction)):
         norm_Delta = calculate_hinf_norm(Delta, omega)
     else:
-        norm_Delta = np.abs(Delta)
+        try:
+            Delta_arr = np.array(Delta, dtype=float)
+        except (ValueError, TypeError):
+            raise ValueError("Delta must be a control system or a numeric matrix/scalar.")
+        if not np.isfinite(Delta_arr).all():
+            raise ValueError("Delta must contain only finite numbers.")
+        norm_Delta = np.max(np.abs(Delta_arr))
 
     product = norm_M * norm_Delta
     return product < 1.0, product
