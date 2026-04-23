@@ -38,3 +38,18 @@ def test_robust_stability_margin():
     # Margin = 1/0.5 = 2.0
     margin = robustness.robust_stability_margin(T)
     assert np.isclose(margin, 2.0, atol=0.1)
+
+def test_small_gain_theorem_check_invalid_input():
+    sys = ct.tf([1], [1, 1])
+
+    with pytest.raises(ValueError, match="M must be a control system or a numeric matrix/scalar."):
+        robustness.small_gain_theorem_check("invalid", sys)
+
+    with pytest.raises(ValueError, match="M must contain only finite numbers."):
+        robustness.small_gain_theorem_check(np.nan, sys)
+
+    with pytest.raises(ValueError, match="Delta must be a control system or a numeric matrix/scalar."):
+        robustness.small_gain_theorem_check(sys, "invalid")
+
+    with pytest.raises(ValueError, match="Delta must contain only finite numbers."):
+        robustness.small_gain_theorem_check(sys, np.nan)
