@@ -119,7 +119,9 @@ def design_kalman_filter(sys, Qn, Rn, G=None):
     # This bypasses the control library's validation and object creation overhead, providing a ~15x speedup.
     P = scipy.linalg.solve_continuous_are(sys.A.T, sys.C.T, G @ Qn @ G.T, Rn)
 
-    L = np.linalg.solve(Rn.T, sys.C @ P).T
+    # ⚡ Bolt Optimization: Rn is a symmetric covariance matrix, so Rn == Rn.T.
+    # Omitting the explicit transpose avoids NumPy memory view creation and LAPACK layout checks.
+    L = np.linalg.solve(Rn, sys.C @ P).T
     E = np.linalg.eigvals(sys.A - L @ sys.C)
     return L, P, E
 
