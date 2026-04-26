@@ -65,3 +65,7 @@
 ## 2026-04-24 - Faster initialization of complex matrices
 **Learning:** Using `-A.astype(complex)` allocates memory and does type casting which is measurably slower (~40% slower) than allocating uninitialized memory with `np.empty_like(A, dtype=complex)` and then copying `-A` into it using `[...] = -A`.
 **Action:** When initializing complex matrices from real arrays for operations like frequency response `sI - A`, use `np.empty_like(A, dtype=complex)` and `[...] = -A` instead of `.astype(complex)` for faster performance.
+
+## 2024-05-20 - Omit transpose on symmetric matrices in np.linalg.solve
+**Learning:** In state-estimation calculations (like Kalman filter gain `L = np.linalg.solve(Rn.T, C @ P).T`), explicitly transposing a symmetric covariance matrix `Rn` creates unnecessary memory views and LAPACK layout checks, slightly reducing performance.
+**Action:** Since `Rn` is guaranteed to be symmetric, omit the `.T` when passing it to `np.linalg.solve` to bypass these minor overheads.
