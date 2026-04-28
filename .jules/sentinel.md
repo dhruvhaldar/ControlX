@@ -64,3 +64,7 @@
 **Vulnerability:** The `MPCController` allowed arbitrarily large prediction horizons `N` to be passed to the CVXPY solver.
 **Learning:** CVXPY generates constraints and variables proportional to `N` and recompiles the problem structure in memory. An excessively large `N` (e.g. >1,000,000) leads to massive memory allocation and CPU consumption during `__init__`, causing the application to crash or freeze (OOM/DoS) before any solve is even attempted.
 **Prevention:** Enforce a strict upper bound limit on problem size parameter `N` (e.g., 10000) at the API boundary, raising a `ValueError` for resource exhaustion.
+## 2025-04-28 - Prevent DoS via unbounded MPC system dimensions
+**Vulnerability:** The `MPCController` allowed systems with arbitrarily large state or input dimensions to be processed by the CVXPY solver.
+**Learning:** CVXPY generates constraint equations proportional to system dimensions and prediction horizon. Passing a massive system (e.g., thousands of states) leads to an explosion of decision variables and constraints, causing the application to freeze or crash due to Out-of-Memory (OOM) errors during the `__init__` compilation phase.
+**Prevention:** Enforce a strict upper bound limit on the structural dimensions of the system (e.g., 500 states/inputs) at the API boundary, raising a `ValueError` for resource exhaustion before solver compilation begins.

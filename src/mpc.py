@@ -66,6 +66,9 @@ class MPCController:
             raise TypeError("System must be a control.StateSpace object. State matrices (Q, R) cannot be applied to arbitrary transfer function realizations.")
 
         # Security: Input validation to prevent resource exhaustion
+        if sys.nstates > 500 or sys.ninputs > 500:
+            raise ValueError("System dimensions are too large (exceeds maximum allowed 500) and would cause resource exhaustion.")
+
         if not isinstance(N, int) or N <= 0:
             raise ValueError("Prediction horizon N must be a positive integer")
         if N > 10000:
