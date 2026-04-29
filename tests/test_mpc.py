@@ -130,3 +130,19 @@ def test_mpc_too_large_horizon():
 
     with pytest.raises(ValueError, match="Prediction horizon N is too large"):
         mpc.MPCController(sys, Q, R, 10001, dt, constraints)
+
+def test_mpc_too_large_system_dimensions():
+    sys_large_states = ct.ss(np.eye(501), np.ones((501, 1)), np.ones((1, 501)), [[0]])
+    sys_large_inputs = ct.ss(np.eye(1), np.ones((1, 501)), np.ones((1, 1)), np.zeros((1, 501)))
+    Q_states = np.eye(501)
+    R_states = np.eye(1)
+    Q_inputs = np.eye(1)
+    R_inputs = np.eye(501)
+    dt = 0.1
+    constraints = {'umin': -1, 'umax': 1}
+
+    with pytest.raises(ValueError, match="System dimensions .* are too large"):
+        mpc.MPCController(sys_large_states, Q_states, R_states, 10, dt, constraints)
+
+    with pytest.raises(ValueError, match="System dimensions .* are too large"):
+        mpc.MPCController(sys_large_inputs, Q_inputs, R_inputs, 10, dt, constraints)
