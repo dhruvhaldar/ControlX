@@ -71,6 +71,9 @@ class MPCController:
         if N > 10000:
             raise ValueError("Prediction horizon N is too large (exceeds maximum allowed 10000) and would cause resource exhaustion.")
 
+        if sys.nstates > 500 or sys.ninputs > 500:
+            raise ValueError("System dimensions are too large (exceeds maximum allowed 500 states/inputs) and would cause resource exhaustion.")
+
         try:
             dt_float = float(dt)
         except (ValueError, TypeError):
