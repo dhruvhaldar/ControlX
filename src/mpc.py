@@ -79,6 +79,9 @@ class MPCController:
         except (ValueError, TypeError):
             raise ValueError("Sampling time dt must be a positive number.")
 
+        if not np.isfinite(dt_float):
+            raise ValueError("Sampling time dt must be finite.")
+
         if dt_float <= 0:
             raise ValueError("Sampling time dt must be positive")
 
@@ -227,7 +230,7 @@ class MPCController:
         # Security: Wrap the solver call to prevent unhandled mathematical exceptions
         # (e.g., from NaNs in constraints or numerical instabilities) from crashing the control loop.
         try:
-            self._prob.solve(solver=cp.OSQP, warm_start=True, verbose=False)
+            self._prob.solve(solver=cp.OSQP, warm_start=True, verbose=False, time_limit=1.0)
         except Exception:
             logger.error("MPC Error: Solver encountered an unhandled exception.")
             return np.zeros(self.n_u), "solver_error"

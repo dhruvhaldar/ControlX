@@ -140,3 +140,12 @@ def test_mpc_too_large_system_dimensions():
 
     with pytest.raises(ValueError, match="System dimensions are too large"):
         mpc.MPCController(sys, Q, R, 10, dt, constraints)
+
+def test_mpc_invalid_dt():
+    sys = ct.ss([[-1]], [[1]], [[1]], [[0]])
+    Q = np.array([[1]])
+    R = np.array([[1]])
+    N = 10
+    constraints = {'umin': -1, 'umax': 1}
+    with pytest.raises(ValueError, match="Sampling time dt must be finite"):
+        mpc.MPCController(sys, Q, R, N, float('nan'), constraints)
