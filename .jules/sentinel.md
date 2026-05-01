@@ -68,3 +68,7 @@
 **Vulnerability:** The `MPCController` allowed arbitrarily large system dimensions (`nstates`, `ninputs`) to be passed to the CVXPY solver.
 **Learning:** CVXPY generates constraints and variables proportional to system state and input sizes, and recompiles the problem structure in memory. Excessively large state or input sizes (e.g. >500) leads to massive memory allocation and CPU consumption during `__init__`, causing the application to crash or freeze (OOM/DoS) before any solve is even attempted.
 **Prevention:** Enforce a strict upper bound limit on problem structural sizes such as `sys.nstates` and `sys.ninputs` (e.g., 500) at the API boundary, raising a `ValueError` for resource exhaustion.
+## 2024-06-15 - Prevent Solver Hang via Time Limits
+**Vulnerability:** The CVXPY OSQP solver in `MPCController` lacked a time limit, meaning a poorly conditioned state input could cause the solver to hang indefinitely (CPU DoS). Additionally, `dt` allowed `NaN`/`Inf`, leading to silent mathematical corruption.
+**Learning:** Math optimization solvers must always be bounded by wall-clock time limits to prevent resource exhaustion, and all scalar inputs (like sampling time) must be explicitly checked for finiteness to prevent NaN propagation.
+**Prevention:** Always set `time_limit` parameters when invoking numerical solvers, and use `np.isfinite` on all structural variables.
