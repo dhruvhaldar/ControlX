@@ -57,6 +57,10 @@ def design_lqr(sys, Q, R):
     if not isinstance(sys, ct.StateSpace):
         raise TypeError("System must be a control.StateSpace object. State matrices (Q, Qn) cannot be applied to arbitrary transfer function realizations.")
 
+    # Security: Input validation to prevent resource exhaustion (DoS) from O(N^3) Riccati solvers
+    if sys.nstates > 500 or sys.ninputs > 500:
+        raise ValueError("System dimensions are too large (exceeds maximum allowed 500 states/inputs) and would cause resource exhaustion.")
+
     # Security: Validate matrices to prevent silent data corruption later
     Q = _validate_matrix(Q, expected_shape=(sys.nstates, sys.nstates), name="Q")
     R = _validate_matrix(R, expected_shape=(sys.ninputs, sys.ninputs), name="R")
@@ -114,6 +118,10 @@ def design_kalman_filter(sys, Qn, Rn, G=None):
     if not isinstance(sys, ct.StateSpace):
         raise TypeError("System must be a control.StateSpace object. State matrices (Q, Qn) cannot be applied to arbitrary transfer function realizations.")
 
+    # Security: Input validation to prevent resource exhaustion (DoS) from O(N^3) Riccati solvers
+    if sys.nstates > 500 or sys.noutputs > 500:
+        raise ValueError("System dimensions are too large (exceeds maximum allowed 500 states/outputs) and would cause resource exhaustion.")
+
     if G is None:
         G = sys.B
 
@@ -127,6 +135,8 @@ def design_kalman_filter(sys, Qn, Rn, G=None):
         raise ValueError("Matrix G must contain only finite numbers.")
     if G.shape[0] != sys.nstates:
         raise ValueError(f"Matrix G must have {sys.nstates} rows.")
+    if G.shape[1] > 500:
+        raise ValueError("Noise input dimensions are too large (exceeds maximum allowed 500) and would cause resource exhaustion.")
 
     # Security: Validate matrices to prevent silent data corruption later
     Qn = _validate_matrix(Qn, expected_shape=(G.shape[1], G.shape[1]), name="Qn")

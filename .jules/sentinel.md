@@ -72,3 +72,8 @@
 **Vulnerability:** The CVXPY OSQP solver in `MPCController` lacked a time limit, meaning a poorly conditioned state input could cause the solver to hang indefinitely (CPU DoS). Additionally, `dt` allowed `NaN`/`Inf`, leading to silent mathematical corruption.
 **Learning:** Math optimization solvers must always be bounded by wall-clock time limits to prevent resource exhaustion, and all scalar inputs (like sampling time) must be explicitly checked for finiteness to prevent NaN propagation.
 **Prevention:** Always set `time_limit` parameters when invoking numerical solvers, and use `np.isfinite` on all structural variables.
+
+## 2025-05-15 - Prevent DoS via unbounded synthesis system dimensions
+**Vulnerability:** The synthesis functions (`design_lqr`, `design_kalman_filter`, `design_lqg`) allowed arbitrarily large system dimensions (`nstates`, `ninputs`, `noutputs`) to be passed to the Riccati equation solvers.
+**Learning:** Riccati solvers have $O(N^3)$ time complexity. Excessively large state or input/output sizes (e.g. >500) leads to massive CPU consumption and memory allocation, causing the application to crash or freeze (OOM/DoS).
+**Prevention:** Enforce a strict upper bound limit on problem structural sizes such as `sys.nstates`, `sys.ninputs`, and `sys.noutputs` (e.g., 500) at the API boundary, raising a `ValueError` for resource exhaustion.
