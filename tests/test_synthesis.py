@@ -75,3 +75,17 @@ def test_synthesis_invalid_dimension():
 
     with pytest.raises(ValueError, match="Rn must have shape"):
         synthesis.design_kalman_filter(sys, np.eye(1), Rn_invalid)
+
+def test_lqr_too_large_system_dimensions():
+    sys = ct.ss(np.zeros((501, 501)), np.zeros((501, 1)), np.zeros((1, 501)), np.zeros((1, 1)))
+    Q = np.eye(501)
+    R = np.eye(1)
+    with pytest.raises(ValueError, match="System dimensions are too large"):
+        synthesis.design_lqr(sys, Q, R)
+
+def test_kalman_too_large_system_dimensions():
+    sys = ct.ss(np.zeros((501, 501)), np.zeros((501, 1)), np.zeros((1, 501)), np.zeros((1, 1)))
+    Qn = np.eye(1)
+    Rn = np.eye(1)
+    with pytest.raises(ValueError, match="System dimensions are too large"):
+        synthesis.design_kalman_filter(sys, Qn, Rn)
