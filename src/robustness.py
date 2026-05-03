@@ -138,6 +138,11 @@ def calculate_hinf_norm(sys, omega=None):
     if not np.isfinite(omega_arr).all():
         raise ValueError("omega must contain only finite numbers.")
 
+    if omega_arr.ndim > 1:
+        raise ValueError("omega must be a 1D array or scalar.")
+    if omega_arr.size > 10000:
+        raise ValueError("omega array is too large (exceeds maximum allowed 10000) and would cause resource exhaustion.")
+
     # ⚡ Bolt Optimization: Replace slow python loop with vectorized batched SVD.
     # Calculates frequency response for all frequencies simultaneously.
     # Avoids sys.frequency_response overhead for StateSpace objects (which relies

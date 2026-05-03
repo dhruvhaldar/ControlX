@@ -101,3 +101,11 @@ def test_invalid_system_type():
 
     with pytest.raises(TypeError):
         analysis.system_gain("invalid", omega=1.0)
+
+def test_calculate_singular_values_too_large_omega():
+    sys = ct.ss([[-1]], [[1]], [[1]], [[0]])
+    with pytest.raises(ValueError, match="omega must be a 1D array or scalar."):
+        analysis.calculate_singular_values(sys, omega=np.array([[1, 2], [3, 4]]))
+
+    with pytest.raises(ValueError, match="omega array is too large"):
+        analysis.calculate_singular_values(sys, omega=np.arange(10001))

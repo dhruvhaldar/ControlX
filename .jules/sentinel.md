@@ -77,3 +77,7 @@
 **Vulnerability:** The synthesis functions (`design_lqr`, `design_kalman_filter`, `design_lqg`) allowed arbitrarily large system dimensions (`nstates`, `ninputs`, `noutputs`) to be passed to the Riccati equation solvers.
 **Learning:** Riccati solvers have $O(N^3)$ time complexity. Excessively large state or input/output sizes (e.g. >500) leads to massive CPU consumption and memory allocation, causing the application to crash or freeze (OOM/DoS).
 **Prevention:** Enforce a strict upper bound limit on problem structural sizes such as `sys.nstates`, `sys.ninputs`, and `sys.noutputs` (e.g., 500) at the API boundary, raising a `ValueError` for resource exhaustion.
+## 2025-05-15 - Prevent DoS via unbounded frequency array sizes
+**Vulnerability:** The `calculate_singular_values` and `calculate_hinf_norm` functions allowed arbitrarily large frequency arrays (`omega`) or multi-dimensional arrays.
+**Learning:** Vectorized frequency response evaluations allocate matrices proportional to the number of frequency points. An excessively large size (e.g. >10,000) or incorrect dimensions leads to massive memory allocation, causing the application to crash or freeze (OOM/DoS).
+**Prevention:** Enforce a strict upper bound limit on input array sizes (e.g., 10000) and validate dimensions (1D) at the API boundary, raising a `ValueError` for resource exhaustion or invalid input.
