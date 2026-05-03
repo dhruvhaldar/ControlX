@@ -60,3 +60,11 @@ def test_invalid_system_type():
 
     with pytest.raises(TypeError):
         robustness.complementary_sensitivity_function("invalid", "invalid")
+
+def test_calculate_hinf_norm_too_large_omega():
+    sys = ct.ss([[-1]], [[1]], [[1]], [[0]])
+    with pytest.raises(ValueError, match="omega must be a 1D array or scalar."):
+        robustness.calculate_hinf_norm(sys, omega=np.array([[1, 2], [3, 4]]))
+
+    with pytest.raises(ValueError, match="omega array is too large"):
+        robustness.calculate_hinf_norm(sys, omega=np.arange(10001))

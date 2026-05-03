@@ -57,6 +57,11 @@ def calculate_singular_values(sys, omega=0):
     if not np.isfinite(omega_arr).all():
         raise ValueError("omega must contain only finite numbers.")
 
+    if omega_arr.ndim > 1:
+        raise ValueError("omega must be a 1D array or scalar.")
+    if omega_arr.size > 10000:
+        raise ValueError("omega array is too large (exceeds maximum allowed 10000) and would cause resource exhaustion.")
+
     # ⚡ Bolt Optimization: Vectorize singular value calculation for multiple frequencies
     # Replaces slow individual evalfr calls with batched frequency_response and SVD.
     # Furthermore, avoid sys.frequency_response overhead for StateSpace objects (which relies
