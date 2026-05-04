@@ -32,7 +32,10 @@ def sensitivity_function(G, K):
             D_s = np.eye(L.noutputs)
         else:
             I_plus_D = np.eye(L.noutputs) + L.D
-            inv_I_plus_D = np.linalg.inv(I_plus_D)
+            try:
+                inv_I_plus_D = np.linalg.inv(I_plus_D)
+            except np.linalg.LinAlgError:
+                raise ValueError("Algebraic loop detected: I + L.D is singular and cannot be inverted.")
 
             A_s = L.A - L.B @ inv_I_plus_D @ L.C
             B_s = L.B @ inv_I_plus_D
@@ -96,7 +99,10 @@ def complementary_sensitivity_function(G, K):
             D_T = np.zeros_like(L.D)
         else:
             I_plus_D = np.eye(L.noutputs) + L.D
-            inv_I_plus_D = np.linalg.inv(I_plus_D)
+            try:
+                inv_I_plus_D = np.linalg.inv(I_plus_D)
+            except np.linalg.LinAlgError:
+                raise ValueError("Algebraic loop detected: I + L.D is singular and cannot be inverted.")
 
             A_T = L.A - L.B @ inv_I_plus_D @ L.C
             B_T = L.B @ inv_I_plus_D
