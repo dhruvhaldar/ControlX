@@ -81,3 +81,7 @@
 **Vulnerability:** The `calculate_singular_values` and `calculate_hinf_norm` functions allowed arbitrarily large frequency arrays (`omega`) or multi-dimensional arrays.
 **Learning:** Vectorized frequency response evaluations allocate matrices proportional to the number of frequency points. An excessively large size (e.g. >10,000) or incorrect dimensions leads to massive memory allocation, causing the application to crash or freeze (OOM/DoS).
 **Prevention:** Enforce a strict upper bound limit on input array sizes (e.g., 10000) and validate dimensions (1D) at the API boundary, raising a `ValueError` for resource exhaustion or invalid input.
+## 2025-05-20 - Prevent Exception Leakage in Robustness Functions
+**Vulnerability:** The `sensitivity_function` and `complementary_sensitivity_function` allowed raw `numpy.linalg.LinAlgError` exceptions to propagate to the user when encountering a singular matrix (algebraic loop).
+**Learning:** In ControlX algebraic operations, when inverting matrices that depend on system properties (like `I + L.D`), failing to handle `np.linalg.LinAlgError` exposes underlying framework implementation details and generic error messages. This can be used to gather information about the internal workings of the library.
+**Prevention:** Always wrap matrix inversion calls like `np.linalg.inv` in a `try...except np.linalg.LinAlgError` block and explicitly raise a `ValueError` with a clear, domain-specific explanation (e.g., "Algebraic loop detected"). This fails securely and prevents information leakage.
