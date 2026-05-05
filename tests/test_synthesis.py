@@ -89,3 +89,21 @@ def test_kalman_too_large_system_dimensions():
     Rn = np.eye(1)
     with pytest.raises(ValueError, match="System dimensions are too large"):
         synthesis.design_kalman_filter(sys, Qn, Rn)
+
+def test_uncontrollable_system_lqr():
+    A = np.array([[1, 0], [0, 1]])
+    B = np.array([[0], [0]]) # B is zero, uncontrollable
+    Q = np.eye(2)
+    R = np.eye(1)
+    sys_model = ct.ss(A, B, np.eye(2), np.zeros((2,1)))
+    with pytest.raises(ValueError, match="Failed to solve Riccati equation"):
+        synthesis.design_lqr(sys_model, Q, R)
+
+def test_unobservable_system_kalman_filter():
+    A = np.array([[1, 0], [0, 1]])
+    C = np.array([[0, 0]]) # unobservable
+    Qn = np.eye(2)
+    Rn = np.eye(1)
+    sys_model = ct.ss(A, np.eye(2), C, np.zeros((1,2)))
+    with pytest.raises(ValueError, match="Failed to solve Riccati equation"):
+        synthesis.design_kalman_filter(sys_model, Qn, Rn)

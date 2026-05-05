@@ -68,7 +68,11 @@ def design_lqr(sys, Q, R):
     # ⚡ Bolt Optimization: Use scipy.linalg.solve_continuous_are/solve_discrete_are instead of control.lqr/dlqr
     # This bypasses the control library's validation and object creation overhead, providing a ~15x speedup.
     if sys.dt is None or sys.dt == 0:
-        S = scipy.linalg.solve_continuous_are(sys.A, sys.B, Q, R)
+        try:
+            S = scipy.linalg.solve_continuous_are(sys.A, sys.B, Q, R)
+        except (scipy.linalg.LinAlgError, np.linalg.LinAlgError, ValueError):
+            raise ValueError("Failed to solve Riccati equation: System may be uncontrollable or weights invalid.")
+
         Bt_S = sys.B.T @ S
 
         # ⚡ Bolt Optimization: R is symmetric positive definite (by definition of LQR cost).
@@ -81,7 +85,11 @@ def design_lqr(sys, Q, R):
 
         E = np.linalg.eigvals(sys.A - sys.B @ K)
     else:
-        S = scipy.linalg.solve_discrete_are(sys.A, sys.B, Q, R)
+        try:
+            S = scipy.linalg.solve_discrete_are(sys.A, sys.B, Q, R)
+        except (scipy.linalg.LinAlgError, np.linalg.LinAlgError, ValueError):
+            raise ValueError("Failed to solve Riccati equation: System may be uncontrollable or weights invalid.")
+
         Bt_S = sys.B.T @ S
         M = R + Bt_S @ sys.B
 
@@ -146,7 +154,10 @@ def design_kalman_filter(sys, Qn, Rn, G=None):
     # The original control.lqe explicitly solves the continuous-time problem
     # ⚡ Bolt Optimization: Use scipy.linalg.solve_continuous_are instead of control.lqe
     # This bypasses the control library's validation and object creation overhead, providing a ~15x speedup.
-    P = scipy.linalg.solve_continuous_are(sys.A.T, sys.C.T, G @ Qn @ G.T, Rn)
+    try:
+        P = scipy.linalg.solve_continuous_are(sys.A.T, sys.C.T, G @ Qn @ G.T, Rn)
+    except (scipy.linalg.LinAlgError, np.linalg.LinAlgError, ValueError):
+        raise ValueError("Failed to solve Riccati equation: System may be unobservable or noise covariances invalid.")
 
     # ⚡ Bolt Optimization: Rn is a symmetric covariance matrix, so Rn == Rn.T.
     # Omitting the explicit transpose avoids NumPy memory view creation and LAPACK layout checks.
