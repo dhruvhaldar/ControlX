@@ -85,3 +85,8 @@
 **Vulnerability:** The `sensitivity_function` and `complementary_sensitivity_function` allowed raw `numpy.linalg.LinAlgError` exceptions to propagate to the user when encountering a singular matrix (algebraic loop).
 **Learning:** In ControlX algebraic operations, when inverting matrices that depend on system properties (like `I + L.D`), failing to handle `np.linalg.LinAlgError` exposes underlying framework implementation details and generic error messages. This can be used to gather information about the internal workings of the library.
 **Prevention:** Always wrap matrix inversion calls like `np.linalg.inv` in a `try...except np.linalg.LinAlgError` block and explicitly raise a `ValueError` with a clear, domain-specific explanation (e.g., "Algebraic loop detected"). This fails securely and prevents information leakage.
+
+## 2025-05-25 - Prevent Exception Leakage in Riccati Solvers
+**Vulnerability:** The synthesis functions (`design_lqr`, `design_kalman_filter`) allowed raw exceptions (`LinAlgError`, `ValueError`) to propagate to the user when encountering systems that cannot yield a valid Riccati solution (e.g., uncontrollable or unobservable systems).
+**Learning:** In control synthesis operations, failing to handle exceptions from underlying solvers (like `scipy.linalg.solve_continuous_are`) exposes framework implementation details and stack traces. This leaks internal workings and fails insecurely.
+**Prevention:** Always wrap Riccati solver calls in a `try...except` block catching numerical errors, and explicitly raise a `ValueError` with a clear, domain-specific explanation (e.g., "Failed to solve Riccati equation").
