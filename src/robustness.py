@@ -31,15 +31,18 @@ def sensitivity_function(G, K):
             C_s = -L.C
             D_s = np.eye(L.noutputs)
         else:
-            I_plus_D = np.eye(L.noutputs) + L.D
+            I_plus_D = L.D.copy()
+            I_plus_D.flat[::L.noutputs+1] += 1.0
             try:
                 inv_I_plus_D = np.linalg.inv(I_plus_D)
             except np.linalg.LinAlgError:
                 raise ValueError("Algebraic loop detected: I + L.D is singular and cannot be inverted.")
 
-            A_s = L.A - L.B @ inv_I_plus_D @ L.C
+            # ⚡ Bolt Optimization: Cache inv_I_plus_D @ L.C to avoid O(N^3) redundant multiplication
+            inv_I_plus_D_C = inv_I_plus_D @ L.C
+            A_s = L.A - L.B @ inv_I_plus_D_C
             B_s = L.B @ inv_I_plus_D
-            C_s = -inv_I_plus_D @ L.C
+            C_s = -inv_I_plus_D_C
             D_s = inv_I_plus_D
 
         return ct.ss(A_s, B_s, C_s, D_s, L.dt)
@@ -98,15 +101,18 @@ def complementary_sensitivity_function(G, K):
             C_T = L.C
             D_T = np.zeros_like(L.D)
         else:
-            I_plus_D = np.eye(L.noutputs) + L.D
+            I_plus_D = L.D.copy()
+            I_plus_D.flat[::L.noutputs+1] += 1.0
             try:
                 inv_I_plus_D = np.linalg.inv(I_plus_D)
             except np.linalg.LinAlgError:
                 raise ValueError("Algebraic loop detected: I + L.D is singular and cannot be inverted.")
 
-            A_T = L.A - L.B @ inv_I_plus_D @ L.C
+            # ⚡ Bolt Optimization: Cache inv_I_plus_D @ L.C to avoid O(N^3) redundant multiplication
+            inv_I_plus_D_C = inv_I_plus_D @ L.C
+            A_T = L.A - L.B @ inv_I_plus_D_C
             B_T = L.B @ inv_I_plus_D
-            C_T = inv_I_plus_D @ L.C
+            C_T = inv_I_plus_D_C
             D_T = L.D @ inv_I_plus_D
 
         return ct.ss(A_T, B_T, C_T, D_T, L.dt)
